@@ -3,118 +3,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat con la Base de Datos de Recepción</title>
+    <title>VeriDoc-Med: Portal del Doctor v1.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
+    <!-- Incluiremos la librería para generar QR más adelante -->
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .chat-container { width: 90%; max-width: 600px; height: 80vh; background: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1 ); display: flex; flex-direction: column; }
-        #chat-window { flex-grow: 1; overflow-y: auto; padding: 20px; }
-        .message { margin-bottom: 15px; padding: 10px 15px; border-radius: 18px; max-width: 80%; line-height: 1.4; }
-        .user-message { background-color: #007bff; color: white; align-self: flex-end; margin-left: auto; }
-        .ia-message { background-color: #e9e9eb; color: #333; align-self: flex-start; }
-        .error-message { background-color: #ffebee; color: #c62828; border: 1px solid #c62828; }
-        #input-area { display: flex; padding: 15px; border-top: 1px solid #ddd; }
-        #user-input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; }
-        #send-button { background: #007bff; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; margin-left: 10px; font-size: 20px; cursor: pointer; }
-        pre { background-color: #2d2d2d; color: #f8f8f2; padding: 10px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
+        :root {
+            --azul-principal: #0D47A1;
+            --blanco: #FFFFFF;
+            --dorado-acento: #C5A265;
+            --gris-fondo: #f4f6f9;
+            --texto-principal: #333;
+            --borde-suave: #dfe4ea;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            background-color: var(--gris-fondo );
+        }
+
+        /* --- Estilos del Login --- */
+        #login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-box {
+            width: 90%;
+            max-width: 400px;
+            padding: 40px;
+            background: var(--blanco);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .logo { height: 60px; margin-bottom: 20px; }
+        h1 { color: var(--azul-principal); margin-bottom: 30px; }
+        label { display: none; } /* Ocultamos labels, los placeholders son suficientes */
+        input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid var(--borde-suave);
+            border-radius: 8px;
+            font-size: 1.1rem;
+            box-sizing: border-box;
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--dorado-acento);
+            box-shadow: 0 0 0 2px rgba(197, 162, 101, 0.3);
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: var(--azul-principal);
+            color: var(--blanco);
+        }
+        button:hover { background-color: #0a3a82; }
+
+        /* --- Estilos del Portal Principal --- */
+        #portal-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #panel-izquierdo {
+            background: var(--blanco);
+            border-right: 1px solid var(--borde-suave);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        #panel-izquierdo h2 {
+            color: var(--azul-principal);
+            margin: 0 0 20px 0;
+            border-bottom: 2px solid var(--dorado-acento);
+            padding-bottom: 10px;
+        }
+        #lista-registros {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        #panel-derecho {
+            background: var(--gris-fondo);
+            padding: 40px;
+            overflow-y: auto;
+        }
+        .placeholder-derecho {
+            text-align: center;
+            padding: 50px;
+            background: var(--blanco);
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        .placeholder-derecho img {
+            max-width: 100%;
+            height: 150px; /* Espacio para la imagen que me darás */
+            object-fit: contain;
+            background-color: #eee; /* Fondo temporal */
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .btn-accion {
+            display: block;
+            width: fit-content;
+            margin: 0 auto;
+            padding: 12px 30px;
+            background-color: var(--dorado-acento);
+            color: var(--blanco);
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .hidden { display: none !important; }
+
+        /* Adaptación para móviles */
+        @media (max-width: 768px) {
+            #portal-container {
+                grid-template-columns: 1fr;
+            }
+            #panel-izquierdo {
+                /* En móvil, el panel izquierdo podría ocultarse o ser un menú */
+                display: none; /* Por ahora lo ocultamos para dar prioridad al contenido */
+            }
+            #panel-derecho {
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="chat-container">
-    <div id="chat-window">
-        <div class="message ia-message">Hola, soy tu asistente de base de datos. ¿Qué información necesitas de la tabla de registros?</div>
+    <!-- MÓDULO DE LOGIN (Visible al inicio) -->
+    <div id="login-container">
+        <div class="login-box">
+            <img src="https://www.hospitalcayetano.gob.pe/PortalWeb/assets/icon/logo-final.png" alt="Logo VeriDoc-Med" class="logo">
+            <h1>Portal del Doctor</h1>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-clave" placeholder="Contraseña" required>
+                <button type="submit">Ingresar</button>
+            </form>
+        </div>
     </div>
-    <div id="input-area">
-        <input type="text" id="user-input" placeholder="Ej: busca al paciente Juan Perez...">
-        <button id="send-button">→</button>
+
+    <!-- PORTAL PRINCIPAL (Oculto al inicio ) -->
+    <div id="portal-container" class="hidden">
+        <!-- Panel Izquierdo: Lista de Registros -->
+        <aside id="panel-izquierdo">
+            <h2>Mis Registros</h2>
+            <div id="lista-registros">
+                <!-- Aquí se cargarán los registros del doctor -->
+                <p style="color: #777;">No hay registros todavía.</p>
+            </div>
+        </aside>
+
+        <!-- Panel Derecho: Contenido dinámico -->
+        <main id="panel-derecho">
+            <!-- Vista por defecto al iniciar sesión -->
+            <div id="vista-bienvenida">
+                <div class="placeholder-derecho">
+                    <img src="" alt="Espacio para imagen de Nuevo Registro">
+                    <a href="#" class="btn-accion" id="btn-nuevo-registro">Nuevo Registro</a>
+                </div>
+                <div class="placeholder-derecho">
+                    <img src="" alt="Espacio para imagen de Registro Compartido">
+                    <a href="#" class="btn-accion">Registro Compartido</a>
+                </div>
+            </div>
+
+            <!-- Vista del formulario para un nuevo registro (oculta) -->
+            <div id="vista-formulario" class="hidden">
+                <!-- Aquí construiremos el formulario de FUA, etc. -->
+            </div>
+        </main>
     </div>
-</div>
 
 <script>
-    // Tus claves de Supabase (¡estas son públicas y seguras de poner aquí!)
-    const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
+    // --- Conexión a Supabase (Misma API Key) ---
+    const SUPABASE_URL = 'https://esiklpxyectbekxvajnw.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
 
-    const chatWindow = document.getElementById('chat-window');
-    const userInput = document.getElementById('user-input');
-    const sendButton = document.getElementById('send-button');
+    // Variables globales para guardar el estado
+    let doctorLogueado = null;
 
-    sendButton.addEventListener('click', handleUserMessage);
-    userInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            handleUserMessage();
-        }
+    // --- Lógica Principal ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginForm = document.getElementById('login-form');
+        loginForm.addEventListener('submit', handleLogin);
+
+        const btnNuevoRegistro = document.getElementById('btn-nuevo-registro');
+        btnNuevoRegistro.addEventListener('click', mostrarFormularioNuevo);
     });
 
-    function addMessage(text, type, isRawJson = false) {
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message', type);
-        if (isRawJson) {
-            messageDiv.innerHTML = `<pre>${text}</pre>`;
-        } else {
-            messageDiv.textContent = text;
-        }
-        chatWindow.appendChild(messageDiv);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
 
-    async function handleUserMessage() {
-        const pregunta = userInput.value.trim();
-        if (!pregunta) return;
-
-        addMessage(pregunta, 'user-message');
-        userInput.value = '';
-        addMessage('Pensando...', 'ia-message', false);
+        async function handleLogin(event) {
+        event.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const clave = document.getElementById('login-clave').value;
+        const boton = event.target.querySelector('button');
+        boton.disabled = true;
+        boton.textContent = 'Verificando...';
 
         try {
-            // 1. Llamar a la Edge Function para que la IA convierta la pregunta en un plan JSON
-            const { data: plan, error: planError } = await supabase.functions.invoke('chat-con-ia', {
-                body: { pregunta },
-            });
+            // 1. Buscar al doctor por email y clave en la tabla de registro
+            const { data: doctor, error } = await supabaseClient
+                .from('doctor_registro')
+                .select('*')
+                .eq('email', email)
+                .eq('clave', clave)
+                .single(); // .single() espera un solo resultado o ninguno
 
-            if (planError) throw planError;
-            if (plan.error) throw new Error(plan.error);
-            
-            // Mostramos el plan que generó la IA (muy útil para depurar)
-            document.querySelector('.ia-message:last-child').remove(); // Quita el "Pensando..."
-            addMessage('Plan de la IA:\n' + JSON.stringify(plan, null, 2), 'ia-message', true);
-
-            // 2. Construir y ejecutar la consulta de Supabase basada en el plan de la IA
-            let query = supabase.from(plan.tabla).select(plan.columnas);
-
-            if (plan.filtros && plan.filtros.length > 0) {
-                plan.filtros.forEach(filtro => {
-                    query = query[filtro.operador](filtro.columna, filtro.valor);
-                });
-            }
-            
-            if (plan.accion === 'count') {
-                query = query.select('*', { count: 'exact', head: true });
+            if (error && error.code !== 'PGRST116') { // PGRST116 es el código para "0 filas encontradas", lo cual no es un error del sistema
+                throw error;
             }
 
-            const { data: resultados, error: dbError, count } = await query;
+            if (doctor) {
+                // 2. Si el doctor existe, guardamos sus datos y cambiamos de vista
+                doctorLogueado = doctor;
+                document.getElementById('login-container').classList.add('hidden');
+                document.getElementById('portal-container').classList.remove('hidden');
+                
+                // 3. Cargamos los registros existentes de este doctor
+                await cargarRegistros(doctor.email);
 
-            if (dbError) throw dbError;
-
-            // 3. Mostrar los resultados al usuario
-            if (plan.accion === 'count') {
-                addMessage(`Respuesta: Se encontraron ${count} registros.`, 'ia-message');
-            } else if (resultados.length === 0) {
-                addMessage('No encontré resultados para tu consulta.', 'ia-message');
             } else {
-                const respuestaFormateada = 'Resultados:\n' + JSON.stringify(resultados, null, 2);
-                addMessage(respuestaFormateada, 'ia-message', true);
+                // Si no se encuentra el doctor
+                alert('Email o contraseña incorrectos.');
+                boton.disabled = false;
+                boton.textContent = 'Ingresar';
             }
 
         } catch (error) {
-            console.error('Error en el proceso:', error);
-            document.querySelector('.ia-message:last-child').remove(); // Quita el "Pensando..."
-            addMessage(`Error: ${error.message}`, 'error-message');
+            alert(`Error al iniciar sesión: ${error.message}`);
+            boton.disabled = false;
+            boton.textContent = 'Ingresar';
         }
     }
-</script>
 
+    async function cargarRegistros(doctorEmail) {
+        const listaDiv = document.getElementById('lista-registros');
+        listaDiv.innerHTML = '<p>Cargando registros...</p>';
+
+        const { data: registros, error } = await supabaseClient
+            .from('autenticacion_firmas')
+            .select('id, tipo_documento, codigo_validacion, created_at')
+            .eq('doctor_email', doctorEmail)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            listaDiv.innerHTML = '<p style="color: red;">Error al cargar registros.</p>';
+            console.error(error);
+            return;
+        }
+
+        if (registros.length === 0) {
+            listaDiv.innerHTML = '<p style="color: #777;">No hay registros todavía.</p>';
+            return;
+        }
+
+        // Si hay registros, los mostramos
+        listaDiv.innerHTML = ''; // Limpiar el mensaje de "cargando"
+        registros.forEach(registro => {
+            const registroElement = document.createElement('div');
+            registroElement.style.padding = '10px';
+            registroElement.style.borderBottom = '1px solid var(--borde-suave)';
+            registroElement.style.cursor = 'pointer';
+            registroElement.innerHTML = `
+                <strong style="color: var(--azul-principal);">${registro.tipo_documento}</strong>  
+
+                <small style="color: #555;">${registro.codigo_validacion}</small>  
+
+                <small style="color: #777;">${new Date(registro.created_at).toLocaleDateString()}</small>
+            `;
+            // Añadiremos un evento onclick para mostrar los detalles en el panel derecho
+            listaDiv.appendChild(registroElement);
+        });
+    }
+
+    function mostrarFormularioNuevo() {
+        document.getElementById('vista-bienvenida').classList.add('hidden');
+        const formVista = document.getElementById('vista-formulario');
+        formVista.classList.remove('hidden');
+
+        // Aquí inyectaremos el HTML del formulario de FUA en el siguiente paso
+        formVista.innerHTML = `
+            <div style="background: var(--blanco); padding: 30px; border-radius: 15px;">
+                <h2>Nuevo Registro de Documento</h2>
+                <p>Aquí irá el formulario para FUA Médica, etc.</p>
+                <!-- Los campos (ListBox, Nro FUA, etc.) los construiremos a continuación -->
+            </div>
+        `;
+    }
+
+</script>
 </body>
 </html>
+
