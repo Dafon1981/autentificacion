@@ -251,51 +251,64 @@
         setupCanvas('firma'); // Configurar el canvas de alta precisión
     }
 
-    async function handleValidarFirma() {
-        const boton = document.getElementById('btn-validar-firma');
-        if (isCanvasEmpty('firma')) {
-            alert('Debe dibujar su firma para validar.');
-            return;
-        }
-        boton.disabled = true;
-        boton.textContent = 'Comparando IA...';
 
-        try {
-            const firmaNuevaBase64 = document.getElementById('canvas-firma').toDataURL('image/png');
-            const { data: resultado, error } = await supabaseClient.functions.invoke('comparar-firmas', {
-                body: {
-                    firmaMaestraUrl: doctorLogueado.firma_maestra_url,
-                    firmaNuevaBase64: firmaNuevaBase64
-                }
-            });
-            if (error) throw error;
 
-            if (resultado.similitud >= 90) { // Umbral de coincidencia
-                const canvas = document.getElementById('canvas-firma');
-                const ctx = canvas.getContext('2d');
-                ctx.globalCompositeOperation = 'source-atop';
-                ctx.fillStyle = 'rgba(39, 174, 96, 0.8)'; // Verde semitransparente
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.globalCompositeOperation = 'source-over';
-                document.getElementById('mensaje-firma').classList.remove('hidden');
-                boton.textContent = 'Generando...';
-                
-                // Esperar unos segundos y luego guardar todo
-                setTimeout(() => guardarRegistroCompleto(), 2000);
+    
+  // REEMPLAZA LA FUNCIÓN ANTIGUA CON ESTA VERSIÓN CORREGIDA
 
-            } else {
-                alert(`Firma no coincide (Similitud: ${resultado.similitud}%). Por favor, intente de nuevo.`);
-                limpiarCanvasFirma();
-                boton.disabled = false;
-                boton.textContent = 'Validar y Generar';
+async function handleValidarFirma() {
+    const boton = document.getElementById('btn-validar-firma');
+    if (isCanvasEmpty('firma')) {
+        alert('Debe dibujar su firma para validar.');
+        return;
+    }
+    boton.disabled = true;
+    boton.textContent = 'Comparando IA...';
+
+    try {
+        const firmaNuevaBase64 = document.getElementById('canvas-firma').toDataURL('image/png');
+        const { data: resultado, error } = await supabaseClient.functions.invoke('comparar-firmas', {
+            body: {
+                firmaMaestraUrl: doctorLogueado.firma_maestra_url,
+                firmaNuevaBase64: firmaNuevaBase64
             }
-        } catch (error) {
-            alert(`Error en la validación biométrica: ${error.message}`);
+        });
+        if (error) throw error;
+
+        if (resultado.similitud >= 90) { // Umbral de coincidencia
+            const canvas = document.getElementById('canvas-firma');
+            const ctx = canvas.getContext('2d');
+            ctx.globalCompositeOperation = 'source-atop';
+            ctx.fillStyle = 'rgba(39, 174, 96, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+            document.getElementById('mensaje-firma').classList.remove('hidden');
+            boton.textContent = 'Generando...';
+            
+            // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+            // Eliminamos el setTimeout y usamos await directamente.
+            // Esto asegura que esperamos a que todo el proceso de guardado termine.
+            await guardarRegistroCompleto();
+
+        } else {
+            alert(`Firma no coincide (Similitud: ${resultado.similitud}%). Por favor, intente de nuevo.`);
+            limpiarCanvasFirma();
             boton.disabled = false;
             boton.textContent = 'Validar y Generar';
         }
+    } catch (error) {
+        alert(`Error en la validación biométrica: ${error.message}`);
+        boton.disabled = false;
+        boton.textContent = 'Validar y Generar';
     }
+    // El bloque finally de la función guardarRegistroCompleto se encargará de resetear el botón.
+}
 
+
+
+
+
+    
     async function guardarRegistroCompleto() {
         try {
             // 1. Generar código de validación
@@ -390,4 +403,5 @@
 </script>
 </body>
 </html>
+
 
