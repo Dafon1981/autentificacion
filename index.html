@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VeriDoc-Med: Portal del Doctor v1.0</title>
+    <title>VeriDoc-Med: Portal del Doctor v2.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
-    <!-- Incluiremos la librería para generar QR más adelante -->
+    <!-- Librería para generar QR. Ligera y eficiente. -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator/qrcode.js"></script>
     <style>
         :root {
             --azul-principal: #0D47A1;
@@ -14,200 +15,136 @@
             --gris-fondo: #f4f6f9;
             --texto-principal: #333;
             --borde-suave: #dfe4ea;
+            --verde-exito: #27ae60;
+            --rojo-error: #c0392b;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             margin: 0;
             background-color: var(--gris-fondo );
         }
-
-        /* --- Estilos del Login --- */
-        #login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .login-box {
-            width: 90%;
-            max-width: 400px;
-            padding: 40px;
-            background: var(--blanco);
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-            text-align: center;
-        }
+        #login-container { display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .login-box { width: 90%; max-width: 400px; padding: 40px; background: var(--blanco); border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); text-align: center; }
         .logo { height: 60px; margin-bottom: 20px; }
-        h1 { color: var(--azul-principal); margin-bottom: 30px; }
-        label { display: none; } /* Ocultamos labels, los placeholders son suficientes */
-        input {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid var(--borde-suave);
-            border-radius: 8px;
-            font-size: 1.1rem;
-            box-sizing: border-box;
+        h1, h2 { color: var(--azul-principal); }
+        input, select {
+            width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid var(--borde-suave);
+            border-radius: 8px; font-size: 1.1rem; box-sizing: border-box;
         }
-        input:focus {
-            outline: none;
-            border-color: var(--dorado-acento);
-            box-shadow: 0 0 0 2px rgba(197, 162, 101, 0.3);
-        }
+        input:focus, select:focus { outline: none; border-color: var(--dorado-acento); box-shadow: 0 0 0 2px rgba(197, 162, 101, 0.3); }
         button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background-color: var(--azul-principal);
-            color: var(--blanco);
+            padding: 15px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold;
+            cursor: pointer; transition: all 0.3s ease; color: var(--blanco);
         }
-        button:hover { background-color: #0a3a82; }
+        .btn-primario { background-color: var(--azul-principal); width: 100%; }
+        .btn-accion { background-color: var(--dorado-acento); }
+        .btn-secundario { background-color: #7f8c8d; }
 
-        /* --- Estilos del Portal Principal --- */
-        #portal-container {
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            height: 100vh;
-            overflow: hidden;
-        }
-        #panel-izquierdo {
-            background: var(--blanco);
-            border-right: 1px solid var(--borde-suave);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-        #panel-izquierdo h2 {
-            color: var(--azul-principal);
-            margin: 0 0 20px 0;
-            border-bottom: 2px solid var(--dorado-acento);
-            padding-bottom: 10px;
-        }
-        #lista-registros {
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-        #panel-derecho {
-            background: var(--gris-fondo);
-            padding: 40px;
-            overflow-y: auto;
-        }
-        .placeholder-derecho {
-            text-align: center;
-            padding: 50px;
-            background: var(--blanco);
-            border-radius: 15px;
-            margin-bottom: 30px;
-        }
-        .placeholder-derecho img {
-            max-width: 100%;
-            height: 150px; /* Espacio para la imagen que me darás */
-            object-fit: contain;
-            background-color: #eee; /* Fondo temporal */
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        .btn-accion {
-            display: block;
-            width: fit-content;
-            margin: 0 auto;
-            padding: 12px 30px;
-            background-color: var(--dorado-acento);
-            color: var(--blanco);
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-        }
+        #portal-container { display: grid; grid-template-columns: 300px 1fr; height: 100vh; overflow: hidden; }
+        #panel-izquierdo { background: var(--blanco); border-right: 1px solid var(--borde-suave); padding: 20px; display: flex; flex-direction: column; }
+        #lista-registros { flex-grow: 1; overflow-y: auto; }
+        .registro-item { padding: 10px; border-bottom: 1px solid var(--borde-suave); cursor: pointer; }
+        .registro-item:hover { background-color: var(--gris-fondo); }
+        .registro-item.activo { background-color: #e3f2fd; border-left: 4px solid var(--azul-principal); }
+        #panel-derecho { background: var(--gris-fondo); padding: 40px; overflow-y: auto; }
+        .placeholder-derecho, .form-wrapper, .detalle-wrapper { background: var(--blanco); padding: 30px; border-radius: 15px; margin-bottom: 30px; }
         .hidden { display: none !important; }
 
-        /* Adaptación para móviles */
-        @media (max-width: 768px) {
-            #portal-container {
-                grid-template-columns: 1fr;
-            }
-            #panel-izquierdo {
-                /* En móvil, el panel izquierdo podría ocultarse o ser un menú */
-                display: none; /* Por ahora lo ocultamos para dar prioridad al contenido */
-            }
-            #panel-derecho {
-                padding: 20px;
-            }
+        /* Estilos para el Canvas y mensaje de éxito */
+        .canvas-container { position: relative; }
+        canvas { border: 2px dashed var(--borde-suave); border-radius: 8px; width: 100%; height: 250px; cursor: crosshair; }
+        canvas.coincide { border-color: var(--verde-exito); box-shadow: 0 0 15px rgba(39, 174, 96, 0.5); }
+        .mensaje-canvas {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(39, 174, 96, 0.9); color: var(--blanco); padding: 20px 40px;
+            border-radius: 10px; font-size: 1.5rem; font-weight: bold; z-index: 10;
         }
+        #detalle-qr-container img { max-width: 200px; margin: 20px auto; display: block; border: 5px solid var(--blanco); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
-    <!-- MÓDULO DE LOGIN (Visible al inicio) -->
     <div id="login-container">
         <div class="login-box">
             <img src="https://www.hospitalcayetano.gob.pe/PortalWeb/assets/icon/logo-final.png" alt="Logo VeriDoc-Med" class="logo">
             <h1>Portal del Doctor</h1>
-            <form id="login-form">
-                <input type="email" id="login-email" placeholder="Email" required>
-                <input type="password" id="login-clave" placeholder="Contraseña" required>
-                <button type="submit">Ingresar</button>
-            </form>
+            <form id="login-form"><input type="email" id="login-email" placeholder="Email" required><input type="password" id="login-clave" placeholder="Contraseña" required><button type="submit" class="btn-primario">Ingresar</button></form>
         </div>
     </div>
 
-    <!-- PORTAL PRINCIPAL (Oculto al inicio ) -->
     <div id="portal-container" class="hidden">
-        <!-- Panel Izquierdo: Lista de Registros -->
         <aside id="panel-izquierdo">
             <h2>Mis Registros</h2>
-            <div id="lista-registros">
-                <!-- Aquí se cargarán los registros del doctor -->
-                <p style="color: #777;">No hay registros todavía.</p>
-            </div>
+            <div id="lista-registros"><p style="color: #777;">No hay registros todavía.</p></div>
         </aside>
 
-        <!-- Panel Derecho: Contenido dinámico -->
         <main id="panel-derecho">
-            <!-- Vista por defecto al iniciar sesión -->
             <div id="vista-bienvenida">
-                <div class="placeholder-derecho">
-                    <img src="" alt="Espacio para imagen de Nuevo Registro">
-                    <a href="#" class="btn-accion" id="btn-nuevo-registro">Nuevo Registro</a>
-                </div>
-                <div class="placeholder-derecho">
-                    <img src="" alt="Espacio para imagen de Registro Compartido">
-                    <a href="#" class="btn-accion">Registro Compartido</a>
+                <div class="placeholder-derecho" style="text-align:center;"><img src="" alt="Img Nuevo Registro" style="height:150px; background:#eee; border-radius:10px; margin-bottom:20px;"><button class="btn-accion" onclick="mostrarVista('vista-formulario' )">Nuevo Registro</button></div>
+                <div class="placeholder-derecho" style="text-align:center;"><img src="" alt="Img Compartido" style="height:150px; background:#eee; border-radius:10px; margin-bottom:20px;"><button class="btn-accion">Registro Compartido</button></div>
+            </div>
+
+            <div id="vista-formulario" class="hidden">
+                <div class="form-wrapper">
+                    <h2>Nuevo Registro de Documento</h2>
+                    <select id="tipo-documento-select">
+                        <option value="">-- Seleccione tipo de documento --</option>
+                        <option value="FUA Médica">FUA Médica</option>
+                        <option value="Documentos">Documentos</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                    <div id="formulario-dinamico"></div>
+                    <div id="firma-container" class="hidden" style="margin-top: 20px;">
+                        <h3>Firme para Validar</h3>
+                        <div class="canvas-container">
+                            <canvas id="canvas-firma"></canvas>
+                            <div id="mensaje-firma" class="mensaje-canvas hidden">Firma Coincide</div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-top:15px;">
+                            <button class="btn-secundario" onclick="limpiarCanvasFirma()">Limpiar</button>
+                            <button id="btn-validar-firma" class="btn-accion">Validar y Generar</button>
+                        </div>
+                    </div>
+                    <button class="btn-secundario" style="width:100%; margin-top:20px;" onclick="mostrarVista('vista-bienvenida')">Volver al Menú Principal</button>
                 </div>
             </div>
 
-            <!-- Vista del formulario para un nuevo registro (oculta) -->
-            <div id="vista-formulario" class="hidden">
-                <!-- Aquí construiremos el formulario de FUA, etc. -->
+            <div id="vista-detalle-registro" class="hidden">
+                <div class="detalle-wrapper">
+                    <h2 id="detalle-tipo-doc"></h2>
+                    <p><strong>Código de Validación:</strong> <span id="detalle-codigo"></span></p>
+                    <p><strong>Fecha de Registro:</strong> <span id="detalle-fecha"></span></p>
+                    <div id="detalle-datos-especificos"></div>
+                    <div id="detalle-qr-container">
+                        <h3>Código QR de Verificación</h3>
+                        <div id="qr-code-img"></div>
+                    </div>
+                    <div style="margin-top:20px; text-align:center;">
+                        <p><strong>Compartir Verificación:</strong></p>
+                        <button class="btn-accion" onclick="compartirQR('whatsapp')">WhatsApp</button>
+                        <button class="btn-accion" onclick="compartirQR('email')" style="margin-left:10px;">Email</button>
+                    </div>
+                     <button class="btn-secundario" style="width:100%; margin-top:20px;" onclick="mostrarVista('vista-bienvenida')">Volver al Menú Principal</button>
+                </div>
             </div>
         </main>
     </div>
 
 <script>
-    // --- Conexión a Supabase (Misma API Key) ---
     const SUPABASE_URL = 'https://esiklpxyectbekxvajnw.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
     const { createClient } = supabase;
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
 
-    // Variables globales para guardar el estado
     let doctorLogueado = null;
+    let datosFormularioActual = {};
 
-    // --- Lógica Principal ---
     document.addEventListener('DOMContentLoaded', () => {
-        const loginForm = document.getElementById('login-form');
-        loginForm.addEventListener('submit', handleLogin);
-
-        const btnNuevoRegistro = document.getElementById('btn-nuevo-registro');
-        btnNuevoRegistro.addEventListener('click', mostrarFormularioNuevo);
+        document.getElementById('login-form').addEventListener('submit', handleLogin);
+        document.getElementById('tipo-documento-select').addEventListener('change', renderFormularioDinamico);
+        document.getElementById('btn-validar-firma').addEventListener('click', handleValidarFirma);
     });
-
-
-        async function handleLogin(event) {
+    async function handleLogin(event) {
         event.preventDefault();
         const email = document.getElementById('login-email').value;
         const clave = document.getElementById('login-clave').value;
@@ -216,34 +153,19 @@
         boton.textContent = 'Verificando...';
 
         try {
-            // 1. Buscar al doctor por email y clave en la tabla de registro
-            const { data: doctor, error } = await supabaseClient
-                .from('doctor_registro')
-                .select('*')
-                .eq('email', email)
-                .eq('clave', clave)
-                .single(); // .single() espera un solo resultado o ninguno
-
-            if (error && error.code !== 'PGRST116') { // PGRST116 es el código para "0 filas encontradas", lo cual no es un error del sistema
-                throw error;
-            }
+            const { data: doctor, error } = await supabaseClient.from('doctor_registro').select('*').eq('email', email).eq('clave', clave).single();
+            if (error && error.code !== 'PGRST116') throw error;
 
             if (doctor) {
-                // 2. Si el doctor existe, guardamos sus datos y cambiamos de vista
                 doctorLogueado = doctor;
                 document.getElementById('login-container').classList.add('hidden');
                 document.getElementById('portal-container').classList.remove('hidden');
-                
-                // 3. Cargamos los registros existentes de este doctor
                 await cargarRegistros(doctor.email);
-
             } else {
-                // Si no se encuentra el doctor
                 alert('Email o contraseña incorrectos.');
                 boton.disabled = false;
                 boton.textContent = 'Ingresar';
             }
-
         } catch (error) {
             alert(`Error al iniciar sesión: ${error.message}`);
             boton.disabled = false;
@@ -251,60 +173,219 @@
         }
     }
 
+    function mostrarVista(vistaId) {
+        ['vista-bienvenida', 'vista-formulario', 'vista-detalle-registro'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById(vistaId).classList.remove('hidden');
+        if (vistaId === 'vista-formulario') {
+            // Resetear el formulario cada vez que se muestra
+            document.getElementById('tipo-documento-select').value = '';
+            document.getElementById('formulario-dinamico').innerHTML = '';
+            document.getElementById('firma-container').classList.add('hidden');
+        }
+    }
+
     async function cargarRegistros(doctorEmail) {
         const listaDiv = document.getElementById('lista-registros');
         listaDiv.innerHTML = '<p>Cargando registros...</p>';
-
-        const { data: registros, error } = await supabaseClient
-            .from('autenticacion_firmas')
-            .select('id, tipo_documento, codigo_validacion, created_at')
-            .eq('doctor_email', doctorEmail)
-            .order('created_at', { ascending: false });
+        const { data: registros, error } = await supabaseClient.from('autenticacion_firmas').select('*').eq('doctor_email', doctorEmail).order('created_at', { ascending: false });
 
         if (error) {
             listaDiv.innerHTML = '<p style="color: red;">Error al cargar registros.</p>';
-            console.error(error);
             return;
         }
-
         if (registros.length === 0) {
             listaDiv.innerHTML = '<p style="color: #777;">No hay registros todavía.</p>';
             return;
         }
 
-        // Si hay registros, los mostramos
-        listaDiv.innerHTML = ''; // Limpiar el mensaje de "cargando"
+        listaDiv.innerHTML = '';
         registros.forEach(registro => {
             const registroElement = document.createElement('div');
-            registroElement.style.padding = '10px';
-            registroElement.style.borderBottom = '1px solid var(--borde-suave)';
-            registroElement.style.cursor = 'pointer';
-            registroElement.innerHTML = `
-                <strong style="color: var(--azul-principal);">${registro.tipo_documento}</strong>  
-
-                <small style="color: #555;">${registro.codigo_validacion}</small>  
-
-                <small style="color: #777;">${new Date(registro.created_at).toLocaleDateString()}</small>
-            `;
-            // Añadiremos un evento onclick para mostrar los detalles en el panel derecho
+            registroElement.className = 'registro-item';
+            registroElement.dataset.id = registro.id;
+            registroElement.innerHTML = `<strong style="color: var(--azul-principal);">${registro.tipo_documento}</strong>  
+<small style="color: #555;">${registro.codigo_validacion}</small>  
+<small style="color: #777;">${new Date(registro.created_at).toLocaleDateString()}</small>`;
+            registroElement.onclick = () => mostrarDetalleRegistro(registro.id);
             listaDiv.appendChild(registroElement);
         });
     }
 
-    function mostrarFormularioNuevo() {
-        document.getElementById('vista-bienvenida').classList.add('hidden');
-        const formVista = document.getElementById('vista-formulario');
-        formVista.classList.remove('hidden');
+    function renderFormularioDinamico(event) {
+        const tipo = event.target.value;
+        const container = document.getElementById('formulario-dinamico');
+        container.innerHTML = '';
+        document.getElementById('firma-container').classList.add('hidden');
 
-        // Aquí inyectaremos el HTML del formulario de FUA en el siguiente paso
-        formVista.innerHTML = `
-            <div style="background: var(--blanco); padding: 30px; border-radius: 15px;">
-                <h2>Nuevo Registro de Documento</h2>
-                <p>Aquí irá el formulario para FUA Médica, etc.</p>
-                <!-- Los campos (ListBox, Nro FUA, etc.) los construiremos a continuación -->
-            </div>
-        `;
+        if (tipo === 'FUA Médica') {
+            container.innerHTML = `
+                <input type="text" id="form-numero_documento" placeholder="Número de FUA" required>
+                <input type="text" id="form-numero_historia" placeholder="Número de Historia Clínica" required>
+                <input type="date" id="form-fecha_atencion" placeholder="Fecha de Atención" required>
+                <input type="text" id="form-observacion" placeholder="Observación / Diagnóstico" required>
+                <button class="btn-accion" style="width:100%;" onclick="mostrarPasoFirma()">Siguiente</button>
+            `;
+        }
+        // Aquí se pueden añadir más 'else if' para "Documentos", "Otros", etc.
     }
+
+    function mostrarPasoFirma() {
+        // Validar y guardar datos del formulario antes de mostrar la firma
+        datosFormularioActual = {
+            tipo_documento: document.getElementById('tipo-documento-select').value,
+            numero_documento: document.getElementById('form-numero_documento').value,
+            numero_historia: document.getElementById('form-numero_historia').value,
+            fecha_atencion: document.getElementById('form-fecha_atencion').value,
+            observacion: document.getElementById('form-observacion').value,
+        };
+
+        if (!datosFormularioActual.numero_documento || !datosFormularioActual.numero_historia || !datosFormularioActual.fecha_atencion) {
+            alert('Por favor, complete todos los campos del formulario.');
+            return;
+        }
+
+        document.getElementById('formulario-dinamico').classList.add('hidden');
+        document.getElementById('firma-container').classList.remove('hidden');
+        setupCanvas('firma'); // Configurar el canvas de alta precisión
+    }
+
+    async function handleValidarFirma() {
+        const boton = document.getElementById('btn-validar-firma');
+        if (isCanvasEmpty('firma')) {
+            alert('Debe dibujar su firma para validar.');
+            return;
+        }
+        boton.disabled = true;
+        boton.textContent = 'Comparando IA...';
+
+        try {
+            const firmaNuevaBase64 = document.getElementById('canvas-firma').toDataURL('image/png');
+            const { data: resultado, error } = await supabaseClient.functions.invoke('comparar-firmas', {
+                body: {
+                    firmaMaestraUrl: doctorLogueado.firma_maestra_url,
+                    firmaNuevaBase64: firmaNuevaBase64
+                }
+            });
+            if (error) throw error;
+
+            if (resultado.similitud >= 90) { // Umbral de coincidencia
+                const canvas = document.getElementById('canvas-firma');
+                const ctx = canvas.getContext('2d');
+                ctx.globalCompositeOperation = 'source-atop';
+                ctx.fillStyle = 'rgba(39, 174, 96, 0.8)'; // Verde semitransparente
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.globalCompositeOperation = 'source-over';
+                document.getElementById('mensaje-firma').classList.remove('hidden');
+                boton.textContent = 'Generando...';
+                
+                // Esperar unos segundos y luego guardar todo
+                setTimeout(() => guardarRegistroCompleto(), 2000);
+
+            } else {
+                alert(`Firma no coincide (Similitud: ${resultado.similitud}%). Por favor, intente de nuevo.`);
+                limpiarCanvasFirma();
+                boton.disabled = false;
+                boton.textContent = 'Validar y Generar';
+            }
+        } catch (error) {
+            alert(`Error en la validación biométrica: ${error.message}`);
+            boton.disabled = false;
+            boton.textContent = 'Validar y Generar';
+        }
+    }
+
+    async function guardarRegistroCompleto() {
+        try {
+            // 1. Generar código de validación
+            const codigo_validacion = 'VDM-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+            
+            // 2. Generar QR
+            const qr = qrcode(0, 'M');
+            qr.addData(JSON.stringify({ codigo: codigo_validacion, doctor: doctorLogueado.nombre, fecha: new Date().toISOString() }));
+            qr.make();
+            const qrImgTag = qr.createImgTag(4); // Crea una etiqueta <img>
+            const qrBase64 = qr.createDataURL(4);
+
+            // 3. Subir QR al Storage
+            const response = await fetch(qrBase64);
+            const blob = await response.blob();
+            const filePath = `public/${codigo_validacion}.png`;
+            const { error: uploadError } = await supabaseClient.storage.from('qr_aut').upload(filePath, blob, { contentType: 'image/png' });
+            if (uploadError) throw uploadError;
+            const { data: urlData } = supabaseClient.storage.from('qr_aut').getPublicUrl(filePath);
+
+            // 4. Guardar todo en la tabla 'autenticacion_firmas'
+            const registroFinal = {
+                ...datosFormularioActual,
+                doctor_email: doctorLogueado.email,
+                codigo_validacion: codigo_validacion,
+                qr_code_url: urlData.publicUrl
+            };
+            const { error: insertError } = await supabaseClient.from('autenticacion_firmas').insert([registroFinal]);
+            if (insertError) throw insertError;
+
+            // 5. Actualizar UI
+            alert('¡Documento validado y registrado exitosamente!');
+            await cargarRegistros(doctorLogueado.email);
+            mostrarVista('vista-bienvenida');
+
+        } catch (error) {
+            alert(`Error al guardar el registro: ${error.message}`);
+        } finally {
+            const boton = document.getElementById('btn-validar-firma');
+            boton.disabled = false;
+            boton.textContent = 'Validar y Generar';
+            limpiarCanvasFirma();
+        }
+    }
+    
+    async function mostrarDetalleRegistro(registroId) {
+        const { data: registro, error } = await supabaseClient.from('autenticacion_firmas').select('*').eq('id', registroId).single();
+        if (error) { alert('No se pudo cargar el detalle del registro.'); return; }
+
+        // Marcar como activo en la lista
+        document.querySelectorAll('.registro-item').forEach(item => item.classList.remove('activo'));
+        document.querySelector(`.registro-item[data-id='${registroId}']`).classList.add('activo');
+
+        document.getElementById('detalle-tipo-doc').textContent = registro.tipo_documento;
+        document.getElementById('detalle-codigo').textContent = registro.codigo_validacion;
+        document.getElementById('detalle-fecha').textContent = new Date(registro.created_at).toLocaleString();
+        
+        const qrContainer = document.getElementById('qr-code-img');
+        qrContainer.innerHTML = `<img src="${registro.qr_code_url}" alt="Código QR">`;
+        
+        // Mostrar datos específicos
+        const datosEspContainer = document.getElementById('detalle-datos-especificos');
+        datosEspContainer.innerHTML = `
+            <p><strong>Nº Documento:</strong> ${registro.numero_documento}</p>
+            <p><strong>Nº Historia:</strong> ${registro.numero_historia}</p>
+            <p><strong>Fecha Atención:</strong> ${new Date(registro.fecha_atencion).toLocaleDateString()}</p>
+            <p><strong>Observación:</strong> ${registro.observacion}</p>
+        `;
+        
+        mostrarVista('vista-detalle-registro');
+    }
+
+    function compartirQR(plataforma) {
+        const codigo = document.getElementById('detalle-codigo').textContent;
+        const urlVerificacion = `https://tu-dominio.com/verificar?codigo=${codigo}`; // URL PÚBLICA DE VERIFICACIÓN (FUTURO )
+        const texto = `Verifica la autenticidad de mi documento firmado digitalmente con el código ${codigo} en: ${urlVerificacion}`;
+        
+        if (plataforma === 'whatsapp') {
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto )}`, '_blank');
+        } else if (plataforma === 'email') {
+            window.location.href = `mailto:?subject=Verificación de Documento Firmado&body=${encodeURIComponent(texto)}`;
+        }
+    }
+
+    // --- Funciones del Canvas (reutilizadas) ---
+    function setupCanvas(id) { /* ...código de la versión anterior... */ }
+    function limpiarCanvasFirma() { document.getElementById('canvas-firma').getContext('2d').clearRect(0, 0, document.getElementById('canvas-firma').width, document.getElementById('canvas-firma').height); document.getElementById('mensaje-firma').classList.add('hidden'); }
+    function isCanvasEmpty(id) { const c = document.getElementById(`canvas-${id}`); return !c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some(channel => channel !== 0); }
+    // Pegar aquí la función setupCanvas completa de la versión anterior para la alta precisión
+    function setupCanvas(id) { const canvas = document.getElementById(`canvas-${id}`); const ctx = canvas.getContext('2d'); const dpr = window.devicePixelRatio || 1; const rect = canvas.getBoundingClientRect(); canvas.width = rect.width * dpr; canvas.height = rect.height * dpr; ctx.scale(dpr, dpr); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; let points = []; let isDrawing = false; let lastWidth = 2.5; function getPos(e) { const rect = canvas.getBoundingClientRect(); const evt = e.touches ? e.touches[0] : e; return { x: evt.clientX - rect.left, y: evt.clientY - rect.top, time: Date.now() }; } function start(e) { isDrawing = true; points = []; const pos = getPos(e); points.push(pos); lastWidth = 2.5; } function draw(e) { if (!isDrawing) return; e.preventDefault(); const currentPoint = getPos(e); const lastPoint = points[points.length - 1]; const dist = Math.hypot(currentPoint.x - lastPoint.x, currentPoint.y - lastPoint.y); const time = currentPoint.time - lastPoint.time; const velocity = dist / (time || 1); const targetWidth = Math.max(4.0 - velocity * 1.5, 1.0); lastWidth = lastWidth * 0.7 + targetWidth * 0.3; ctx.lineWidth = lastWidth; ctx.strokeStyle = '#000'; ctx.beginPath(); ctx.moveTo(lastPoint.x, lastPoint.y); ctx.lineTo(currentPoint.x, currentPoint.y); ctx.stroke(); points.push(currentPoint); } function stop() { isDrawing = false; } canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', stop); canvas.addEventListener('mouseout', stop); canvas.addEventListener('touchstart', start, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', stop); }
 
 </script>
 </body>
