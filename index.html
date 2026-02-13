@@ -42,7 +42,17 @@
         .placeholder-derecho, .form-wrapper, .detalle-wrapper { background: var(--blanco); padding: 30px; border-radius: 15px; }
         .hidden { display: none !important; }
         .canvas-container { position: relative; width: 100%; max-width: 400px; margin: 0 auto; }
-        canvas { border: 2px dashed var(--borde-suave); border-radius: 8px; width: 100%; aspect-ratio: 1 / 1; cursor: crosshair; }
+       /* REEMPLAZA LA REGLA ANTERIOR DEL CANVAS CON ESTA */
+canvas {
+    border: 2px dashed var(--borde-suave);
+    border-radius: 8px;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    /* --- ¡AQUÍ ESTÁ LA CORRECCIÓN! --- */
+    /* Usamos una imagen de un punto como cursor para que siempre sea visible */
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4" fill="rgba(0,0,0,0.7 )"/></svg>') 6 6, auto;
+}
+
         .mensaje-canvas { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(39, 174, 96, 0.9); color: var(--blanco); padding: 20px 40px; border-radius: 10px; font-size: 1.5rem; font-weight: bold; z-index: 10; }
         
         /* --- 1. CAMBIO: Nuevo Layout para Detalles --- */
@@ -442,4 +452,5 @@
 </script>
 </body>
 </html>
+
 
