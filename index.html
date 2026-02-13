@@ -21,7 +21,6 @@
             margin: 0;
             background-color: var(--gris-fondo );
         }
-        /* --- Estilos del Login y Portal (sin cambios) --- */
         #login-container { display: flex; justify-content: center; align-items: center; height: 100vh; }
         .login-box { width: 90%; max-width: 400px; padding: 40px; background: var(--blanco); border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); text-align: center; }
         .logo { height: 60px; margin-bottom: 20px; }
@@ -42,42 +41,65 @@
         .placeholder-derecho, .form-wrapper, .detalle-wrapper { background: var(--blanco); padding: 30px; border-radius: 15px; margin-bottom: 30px; }
         .hidden { display: none !important; }
 
-        /* --- 1. CAMBIO: Estilos del Canvas Cuadrado --- */
         .canvas-container { position: relative; width: 100%; max-width: 400px; margin: 0 auto; }
         canvas {
             border: 2px dashed var(--borde-suave); border-radius: 8px; width: 100%;
-            aspect-ratio: 1 / 1; /* Proporción cuadrada */
+            aspect-ratio: 1 / 1;
             cursor: crosshair;
         }
         .mensaje-canvas { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(39, 174, 96, 0.9); color: var(--blanco); padding: 20px 40px; border-radius: 10px; font-size: 1.5rem; font-weight: bold; z-index: 10; }
         
-        /* --- 2. CAMBIO: Estilos del Detalle del Registro --- */
         #detalle-qr-container img { max-width: 200px; margin: 20px auto; display: block; border: 5px solid var(--blanco); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .botones-detalle { display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
     </style>
 </head>
 <body>
 
-    <!-- El HTML del Login y la estructura del Portal no cambian -->
     <div id="login-container">
-        <!-- ... sin cambios ... -->
+        <div class="login-box">
+            <img src="https://www.hospitalcayetano.gob.pe/PortalWeb/assets/icon/logo-final.png" alt="Logo VeriDoc-Med" class="logo">
+            <h1>Portal del Doctor</h1>
+            <form id="login-form"><input type="email" id="login-email" placeholder="Email" required><input type="password" id="login-clave" placeholder="Contraseña" required><button type="submit" class="btn-primario">Ingresar</button></form>
+        </div>
     </div>
 
     <div id="portal-container" class="hidden">
         <aside id="panel-izquierdo">
-            <!-- ... sin cambios ... -->
+            <h2>Mis Registros</h2>
+            <div id="lista-registros"><p style="color: #777;">No hay registros todavía.</p></div>
         </aside>
 
         <main id="panel-derecho">
             <div id="vista-bienvenida">
-                <!-- ... sin cambios ... -->
+                <div class="placeholder-derecho" style="text-align:center;"><img src="" alt="Img Nuevo Registro" style="height:150px; background:#eee; border-radius:10px; margin-bottom:20px;"><button class="btn-accion" onclick="mostrarVista('vista-formulario' )">Nuevo Registro</button></div>
+                <div class="placeholder-derecho" style="text-align:center;"><img src="" alt="Img Compartido" style="height:150px; background:#eee; border-radius:10px; margin-bottom:20px;"><button class="btn-accion">Registro Compartido</button></div>
             </div>
 
             <div id="vista-formulario" class="hidden">
-                <!-- ... sin cambios ... -->
+                <div class="form-wrapper">
+                    <h2>Nuevo Registro de Documento</h2>
+                    <select id="tipo-documento-select">
+                        <option value="">-- Seleccione tipo de documento --</option>
+                        <option value="FUA Médica">FUA Médica</option>
+                        <option value="Documentos">Documentos</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                    <div id="formulario-dinamico"></div>
+                    <div id="firma-container" class="hidden" style="margin-top: 20px;">
+                        <h3>Firme para Validar</h3>
+                        <div class="canvas-container">
+                            <canvas id="canvas-firma"></canvas>
+                            <div id="mensaje-firma" class="mensaje-canvas hidden">Firma Coincide</div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-top:15px;">
+                            <button class="btn-secundario" onclick="limpiarCanvasFirma()">Limpiar</button>
+                            <button id="btn-validar-firma" class="btn-accion">Validar y Generar</button>
+                        </div>
+                    </div>
+                    <button class="btn-secundario" style="width:100%; margin-top:20px;" onclick="mostrarVista('vista-bienvenida')">Volver al Menú Principal</button>
+                </div>
             </div>
 
-            <!-- 3. CAMBIO: HTML de la Vista de Detalle Mejorada -->
             <div id="vista-detalle-registro" class="hidden">
                 <div class="detalle-wrapper">
                     <h2 id="detalle-tipo-doc"></h2>
@@ -106,20 +128,17 @@
 
     let doctorLogueado = null;
     let datosFormularioActual = {};
-    let registroSeleccionado = null; // Para guardar los datos del registro activo
+    let registroSeleccionado = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('login-form').addEventListener('submit', handleLogin);
         document.getElementById('tipo-documento-select').addEventListener('change', renderFormularioDinamico);
         document.getElementById('btn-validar-firma').addEventListener('click', handleValidarFirma);
-        
-        // 4. CAMBIO: Listeners para los nuevos botones
         document.getElementById('btn-volver-menu').addEventListener('click', () => mostrarVista('vista-bienvenida'));
         document.getElementById('btn-descargar-qr').addEventListener('click', descargarQR);
         document.getElementById('btn-compartir-wa').addEventListener('click', compartirQR);
     });
     async function handleLogin(event) {
-        // ... sin cambios ...
         event.preventDefault();
         const email = document.getElementById('login-email').value;
         const clave = document.getElementById('login-clave').value;
@@ -149,7 +168,6 @@
     }
 
     function mostrarVista(vistaId) {
-        // ... sin cambios ...
         ['vista-bienvenida', 'vista-formulario', 'vista-detalle-registro'].forEach(id => {
             document.getElementById(id).classList.add('hidden');
         });
@@ -161,7 +179,6 @@
         }
     }
 
-    // --- 1. CAMBIO: La lista ahora es clickeable ---
     async function cargarRegistros(doctorEmail) {
         const listaDiv = document.getElementById('lista-registros');
         listaDiv.innerHTML = '<p>Cargando registros...</p>';
@@ -178,14 +195,12 @@
             registroElement.innerHTML = `<strong style="color: var(--azul-principal);">${registro.tipo_documento}</strong>  
 <small style="color: #555;">${registro.codigo_validacion}</small>  
 <small style="color: #777;">${new Date(registro.created_at).toLocaleDateString()}</small>`;
-            // Al hacer click, se llama a la función para mostrar los detalles
             registroElement.onclick = () => mostrarDetalleRegistro(registro.id);
             listaDiv.appendChild(registroElement);
         });
     }
 
     function renderFormularioDinamico(event) {
-        // ... sin cambios ...
         const tipo = event.target.value;
         const container = document.getElementById('formulario-dinamico');
         container.innerHTML = '';
@@ -203,7 +218,6 @@
     }
 
     function mostrarPasoFirma() {
-        // ... sin cambios ...
         datosFormularioActual = {
             tipo_documento: document.getElementById('tipo-documento-select').value,
             numero_documento: document.getElementById('form-numero_documento').value,
@@ -220,7 +234,6 @@
         setupCanvas('firma');
     }
 
-    // --- 2. CAMBIO: Umbral de coincidencia ajustado a 88% ---
     async function handleValidarFirma() {
         const boton = document.getElementById('btn-validar-firma');
         if (isCanvasEmpty('firma')) {
@@ -241,7 +254,7 @@
             });
             if (error) throw error;
 
-            if (resultado.similitud >= 88) { // <-- UMBRAL AJUSTADO
+            if (resultado.similitud >= 88) {
                 const canvas = document.getElementById('canvas-firma');
                 const ctx = canvas.getContext('2d');
                 ctx.globalCompositeOperation = 'source-atop';
@@ -267,7 +280,6 @@
     }
 
     async function guardarRegistroCompleto() {
-        // ... sin cambios ...
         try {
             const codigo_validacion = 'VDM-' + Math.random().toString(36).substr(2, 9).toUpperCase();
             const qr = qrcode(0, 'M');
@@ -302,12 +314,11 @@
         }
     }
     
-    // --- 3. CAMBIO: Lógica para mostrar los detalles del registro ---
     async function mostrarDetalleRegistro(registroId) {
         const { data: registro, error } = await supabaseClient.from('autenticacion_firmas').select('*').eq('id', registroId).single();
         if (error) { alert('No se pudo cargar el detalle del registro.'); return; }
 
-        registroSeleccionado = registro; // Guardar el registro completo para usarlo en otras funciones
+        registroSeleccionado = registro;
 
         document.querySelectorAll('.registro-item').forEach(item => item.classList.remove('activo'));
         document.querySelector(`.registro-item[data-id='${registroId}']`).classList.add('activo');
@@ -330,7 +341,6 @@
         mostrarVista('vista-detalle-registro');
     }
 
-    // --- 4. CAMBIO: Nuevas funciones para descargar y compartir ---
     function descargarQR() {
         if (!registroSeleccionado) return;
         const link = document.createElement('a');
@@ -343,24 +353,68 @@
 
     function compartirQR() {
         if (!registroSeleccionado) return;
-        const urlVerificacion = `https://tu-dominio.com/verificar?codigo=${registroSeleccionado.codigo_validacion}`; // URL PÚBLICA (FUTURO )
-        const texto = `Verifica la autenticidad de mi documento (${registroSeleccionado.tipo_documento}) firmado digitalmente con el código ${registroSeleccionado.codigo_validacion} en: ${urlVerificacion}`;
+        const urlVerificacion = `https://tu-dominio.com/verificar?codigo=${registroSeleccionado.codigo_validacion}`;
+        const texto = `Verifica la autenticidad de mi documento (${registroSeleccionado.tipo_documento} ) firmado digitalmente con el código ${registroSeleccionado.codigo_validacion} en: ${urlVerificacion}`;
         
-        if (navigator.share) { // Usar la API nativa de compartir si está disponible
+        if (navigator.share) {
             navigator.share({
                 title: 'Verificación de Documento Firmado',
                 text: texto,
             }).catch(console.error);
-        } else { // Fallback para escritorio
+        } else {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto )}`, '_blank');
         }
     }
 
-    // --- Funciones del Canvas (sin cambios) ---
-    function setupCanvas(id) { /* ...código de la versión anterior... */ }
-    function limpiarCanvasFirma() { /* ...código de la versión anterior... */ }
-    function isCanvasEmpty(id) { /* ...código de la versión anterior... */ }
-    // Pegar aquí la función setupCanvas completa de la versión anterior para la alta precisión
+    function setupCanvas(id) {
+        const canvas = document.getElementById(`canvas-${id}`);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        let points = [];
+        let isDrawing = false;
+        let lastWidth = 2.0;
+
+        function getPos(e) { const rect = canvas.getBoundingClientRect(); const evt = e.touches ? e.touches[0] : e; return { x: evt.clientX - rect.left, y: evt.clientY - rect.top, time: Date.now() }; }
+        function start(e) { isDrawing = true; points = []; const pos = getPos(e); points.push(pos); lastWidth = 2.0; }
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            const currentPoint = getPos(e);
+            const lastPoint = points[points.length - 1];
+            const dist = Math.hypot(currentPoint.x - lastPoint.x, currentPoint.y - lastPoint.y);
+            const time = currentPoint.time - lastPoint.time;
+            const velocity = dist / (time || 1);
+            const targetWidth = Math.max(5.0 - velocity * 2.0, 0.5);
+            lastWidth = lastWidth * 0.6 + targetWidth * 0.4;
+            ctx.lineWidth = lastWidth;
+            ctx.strokeStyle = '#000';
+            ctx.beginPath(); ctx.moveTo(lastPoint.x, lastPoint.y); ctx.lineTo(currentPoint.x, currentPoint.y); ctx.stroke();
+            points.push(currentPoint);
+        }
+        function stop() { isDrawing = false; }
+        canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', stop); canvas.addEventListener('mouseout', stop);
+        canvas.addEventListener('touchstart', start, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', stop);
+    }
+
+    function limpiarCanvasFirma() {
+        const canvas = document.getElementById('canvas-firma');
+        if (!canvas) return;
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('mensaje-firma').classList.add('hidden');
+    }
+
+    function isCanvasEmpty(id) {
+        const c = document.getElementById(`canvas-${id}`);
+        if (!c) return true;
+        return !c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some(channel => channel !== 0);
+    }
 </script>
 </body>
 </html>
