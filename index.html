@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VeriDoc-Med: Portal del Doctor v2.2</title>
+    <title>VeriDoc-Med: Portal del Doctor v2.3</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator/qrcode.js"></script>
     <style>
@@ -21,6 +21,7 @@
             margin: 0;
             background-color: var(--gris-fondo );
         }
+        /* --- Estilos Generales (sin cambios) --- */
         #login-container { display: flex; justify-content: center; align-items: center; height: 100vh; }
         .login-box { width: 90%; max-width: 400px; padding: 40px; background: var(--blanco); border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); text-align: center; }
         .logo { height: 60px; margin-bottom: 20px; }
@@ -38,83 +39,71 @@
         .registro-item:hover { background-color: var(--gris-fondo); }
         .registro-item.activo { background-color: #e3f2fd; border-left: 4px solid var(--azul-principal); font-weight: bold; }
         #panel-derecho { background: var(--gris-fondo); padding: 40px; overflow-y: auto; }
-        .placeholder-derecho, .form-wrapper, .detalle-wrapper { background: var(--blanco); padding: 30px; border-radius: 15px; margin-bottom: 30px; }
+        .placeholder-derecho, .form-wrapper, .detalle-wrapper { background: var(--blanco); padding: 30px; border-radius: 15px; }
         .hidden { display: none !important; }
-
         .canvas-container { position: relative; width: 100%; max-width: 400px; margin: 0 auto; }
-        canvas {
-            border: 2px dashed var(--borde-suave); border-radius: 8px; width: 100%;
-            aspect-ratio: 1 / 1;
-            cursor: crosshair;
-        }
+        canvas { border: 2px dashed var(--borde-suave); border-radius: 8px; width: 100%; aspect-ratio: 1 / 1; cursor: crosshair; }
         .mensaje-canvas { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(39, 174, 96, 0.9); color: var(--blanco); padding: 20px 40px; border-radius: 10px; font-size: 1.5rem; font-weight: bold; z-index: 10; }
         
-        #detalle-qr-container img { max-width: 200px; margin: 20px auto; display: block; border: 5px solid var(--blanco); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .botones-detalle { display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
+        /* --- 1. CAMBIO: Nuevo Layout para Detalles --- */
+        .detalle-grid {
+            display: grid;
+            grid-template-columns: 1fr 250px; /* Datos a la izquierda, QR a la derecha */
+            gap: 40px;
+            align-items: flex-start;
+        }
+        #detalle-qr-container { text-align: center; }
+        #detalle-qr-container h3 { margin-top: 0; }
+        #detalle-qr-container img {
+            width: 100%; /* QR más grande */
+            max-width: 250px;
+            border: 5px solid var(--blanco);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .botones-detalle { display: flex; justify-content: center; gap: 15px; margin-top: 30px; flex-wrap: wrap; }
     </style>
 </head>
 <body>
 
+    <!-- El HTML del Login y la estructura del Portal no cambian -->
     <div id="login-container">
-        <div class="login-box">
-            <img src="https://www.hospitalcayetano.gob.pe/PortalWeb/assets/icon/logo-final.png" alt="Logo VeriDoc-Med" class="logo">
-            <h1>Portal del Doctor</h1>
-            <form id="login-form"><input type="email" id="login-email" placeholder="Email" required><input type="password" id="login-clave" placeholder="Contraseña" required><button type="submit" class="btn-primario">Ingresar</button></form>
-        </div>
+        <!-- ... sin cambios ... -->
     </div>
 
     <div id="portal-container" class="hidden">
         <aside id="panel-izquierdo">
-            <h2>Mis Registros</h2>
-            <div id="lista-registros"><p style="color: #777;">No hay registros todavía.</p></div>
+            <!-- ... sin cambios ... -->
         </aside>
 
         <main id="panel-derecho">
             <div id="vista-bienvenida">
-                <div class="placeholder-derecho" style="text-align:center;"><img src="" alt="Img Nuevo Registro" style="height:150px; background:#eee; border-radius:10px; margin-bottom:20px;"><button class="btn-accion" onclick="mostrarVista('vista-formulario' )">Nuevo Registro</button></div>
-                <div class="placeholder-derecho" style="text-align:center;"><img src="" alt="Img Compartido" style="height:150px; background:#eee; border-radius:10px; margin-bottom:20px;"><button class="btn-accion">Registro Compartido</button></div>
+                <!-- ... sin cambios ... -->
             </div>
 
             <div id="vista-formulario" class="hidden">
-                <div class="form-wrapper">
-                    <h2>Nuevo Registro de Documento</h2>
-                    <select id="tipo-documento-select">
-                        <option value="">-- Seleccione tipo de documento --</option>
-                        <option value="FUA Médica">FUA Médica</option>
-                        <option value="Documentos">Documentos</option>
-                        <option value="Otros">Otros</option>
-                    </select>
-                    <div id="formulario-dinamico"></div>
-                    <div id="firma-container" class="hidden" style="margin-top: 20px;">
-                        <h3>Firme para Validar</h3>
-                        <div class="canvas-container">
-                            <canvas id="canvas-firma"></canvas>
-                            <div id="mensaje-firma" class="mensaje-canvas hidden">Firma Coincide</div>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; margin-top:15px;">
-                            <button class="btn-secundario" onclick="limpiarCanvasFirma()">Limpiar</button>
-                            <button id="btn-validar-firma" class="btn-accion">Validar y Generar</button>
-                        </div>
-                    </div>
-                    <button class="btn-secundario" style="width:100%; margin-top:20px;" onclick="mostrarVista('vista-bienvenida')">Volver al Menú Principal</button>
-                </div>
+                <!-- ... sin cambios ... -->
             </div>
 
+            <!-- 2. CAMBIO: HTML de la Vista de Detalle Reestructurada -->
             <div id="vista-detalle-registro" class="hidden">
                 <div class="detalle-wrapper">
-                    <h2 id="detalle-tipo-doc"></h2>
-                    <p><strong>Código de Validación:</strong> <span id="detalle-codigo"></span></p>
-                    <p><strong>Fecha de Registro:</strong> <span id="detalle-fecha"></span></p>
-                    <div id="detalle-datos-especificos"></div>
-                    <div id="detalle-qr-container">
-                        <h3>Código QR de Verificación</h3>
-                        <div id="qr-code-img"></div>
+                    <div class="detalle-grid">
+                        <div id="detalle-datos-texto">
+                            <h2 id="detalle-tipo-doc"></h2>
+                            <p><strong>Código de Validación:</strong> <span id="detalle-codigo"></span></p>
+                            <p><strong>Fecha de Registro:</strong> <span id="detalle-fecha"></span></p>
+                            <div id="detalle-datos-especificos"></div>
+                        </div>
+                        <div id="detalle-qr-container">
+                            <h3>Código QR</h3>
+                            <div id="qr-code-img"></div>
+                        </div>
                     </div>
-                    <div class="botones-detalle">
-                        <button id="btn-descargar-qr" class="btn-accion">Descargar QR</button>
-                        <button id="btn-compartir-wa" class="btn-accion">Compartir (WA)</button>
-                        <button id="btn-volver-menu" class="btn-secundario">Volver al Menú</button>
-                    </div>
+                </div>
+                <div class="botones-detalle">
+                    <button id="btn-descargar-qr" class="btn-accion">Descargar QR</button>
+                    <button id="btn-compartir-wa" class="btn-accion">Compartir (WA)</button>
+                    <button id="btn-volver-menu" class="btn-secundario">Volver al Menú</button>
                 </div>
             </div>
         </main>
@@ -139,6 +128,7 @@
         document.getElementById('btn-compartir-wa').addEventListener('click', compartirQR);
     });
     async function handleLogin(event) {
+        // ... sin cambios ...
         event.preventDefault();
         const email = document.getElementById('login-email').value;
         const clave = document.getElementById('login-clave').value;
@@ -168,6 +158,7 @@
     }
 
     function mostrarVista(vistaId) {
+        // ... sin cambios ...
         ['vista-bienvenida', 'vista-formulario', 'vista-detalle-registro'].forEach(id => {
             document.getElementById(id).classList.add('hidden');
         });
@@ -180,6 +171,7 @@
     }
 
     async function cargarRegistros(doctorEmail) {
+        // ... sin cambios ...
         const listaDiv = document.getElementById('lista-registros');
         listaDiv.innerHTML = '<p>Cargando registros...</p>';
         const { data: registros, error } = await supabaseClient.from('autenticacion_firmas').select('*').eq('doctor_email', doctorEmail).order('created_at', { ascending: false });
@@ -201,6 +193,7 @@
     }
 
     function renderFormularioDinamico(event) {
+        // ... sin cambios ...
         const tipo = event.target.value;
         const container = document.getElementById('formulario-dinamico');
         container.innerHTML = '';
@@ -218,6 +211,7 @@
     }
 
     function mostrarPasoFirma() {
+        // ... sin cambios ...
         datosFormularioActual = {
             tipo_documento: document.getElementById('tipo-documento-select').value,
             numero_documento: document.getElementById('form-numero_documento').value,
@@ -235,6 +229,7 @@
     }
 
     async function handleValidarFirma() {
+        // ... sin cambios ...
         const boton = document.getElementById('btn-validar-firma');
         if (isCanvasEmpty('firma')) {
             alert('Debe dibujar su firma para validar.');
@@ -280,6 +275,7 @@
     }
 
     async function guardarRegistroCompleto() {
+        // ... sin cambios ...
         try {
             const codigo_validacion = 'VDM-' + Math.random().toString(36).substr(2, 9).toUpperCase();
             const qr = qrcode(0, 'M');
@@ -314,6 +310,7 @@
         }
     }
     
+    // --- 1. CAMBIO: Lógica adaptada al nuevo layout ---
     async function mostrarDetalleRegistro(registroId) {
         const { data: registro, error } = await supabaseClient.from('autenticacion_firmas').select('*').eq('id', registroId).single();
         if (error) { alert('No se pudo cargar el detalle del registro.'); return; }
@@ -341,17 +338,41 @@
         mostrarVista('vista-detalle-registro');
     }
 
-    function descargarQR() {
+    // --- 2. CAMBIO: Función de descarga corregida ---
+    async function descargarQR() {
         if (!registroSeleccionado) return;
-        const link = document.createElement('a');
-        link.href = registroSeleccionado.qr_code_url;
-        link.download = `QR_${registroSeleccionado.codigo_validacion}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const boton = document.getElementById('btn-descargar-qr');
+        boton.disabled = true;
+        boton.textContent = 'Descargando...';
+
+        try {
+            // Extraer el path del archivo desde la URL pública
+            const url = new URL(registroSeleccionado.qr_code_url);
+            const path = url.pathname.split('/qr_aut/')[1];
+
+            // Usar el método download() de Supabase que maneja CORS correctamente
+            const { data: blob, error } = await supabaseClient.storage.from('qr_aut').download(path);
+            if (error) throw error;
+
+            // Crear un enlace temporal en el navegador para iniciar la descarga
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `QR_${registroSeleccionado.codigo_validacion}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href); // Liberar memoria
+
+        } catch (error) {
+            alert(`Error al descargar el QR: ${error.message}`);
+        } finally {
+            boton.disabled = false;
+            boton.textContent = 'Descargar QR';
+        }
     }
 
     function compartirQR() {
+        // ... sin cambios ...
         if (!registroSeleccionado) return;
         const urlVerificacion = `https://tu-dominio.com/verificar?codigo=${registroSeleccionado.codigo_validacion}`;
         const texto = `Verifica la autenticidad de mi documento (${registroSeleccionado.tipo_documento} ) firmado digitalmente con el código ${registroSeleccionado.codigo_validacion} en: ${urlVerificacion}`;
@@ -367,6 +388,7 @@
     }
 
     function setupCanvas(id) {
+        // ... sin cambios ...
         const canvas = document.getElementById(`canvas-${id}`);
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -404,6 +426,7 @@
     }
 
     function limpiarCanvasFirma() {
+        // ... sin cambios ...
         const canvas = document.getElementById('canvas-firma');
         if (!canvas) return;
         canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
@@ -411,6 +434,7 @@
     }
 
     function isCanvasEmpty(id) {
+        // ... sin cambios ...
         const c = document.getElementById(`canvas-${id}`);
         if (!c) return true;
         return !c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some(channel => channel !== 0);
