@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VeriDoc-Med: Portal del Doctor v2.4 (Diseño Corregido)</title>
+    <title>VeriDoc-Med: Portal del Doctor v2.5 (Estable)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator/qrcode.js"></script>
     <style>
@@ -21,7 +21,6 @@
             margin: 0;
             background-color: var(--gris-fondo );
         }
-        /* --- Estilos Generales (sin cambios) --- */
         #login-container { display: flex; justify-content: center; align-items: center; height: 100vh; }
         .login-box { width: 90%; max-width: 400px; padding: 40px; background: var(--blanco); border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); text-align: center; }
         .logo { height: 60px; margin-bottom: 20px; }
@@ -41,54 +40,66 @@
         .placeholder-derecho, .form-wrapper, .detalle-wrapper { background: var(--blanco); padding: 30px; border-radius: 15px; }
         .hidden { display: none !important; }
         .canvas-container { position: relative; width: 100%; max-width: 400px; margin: 0 auto; }
-        canvas {
-            border: 2px dashed var(--borde-suave); border-radius: 8px; width: 100%;
-            aspect-ratio: 1 / 1;
-            cursor: crosshair; /* Cursor restaurado a una opción segura */
-        }
+        canvas { border: 2px dashed var(--borde-suave); border-radius: 8px; width: 100%; aspect-ratio: 1 / 1; cursor: crosshair; }
         .mensaje-canvas { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(39, 174, 96, 0.9); color: var(--blanco); padding: 20px 40px; border-radius: 10px; font-size: 1.5rem; font-weight: bold; z-index: 10; }
         
-        /* --- 1. CAMBIO: Nuevo Layout para Detalles --- */
-        .detalle-grid {
-            display: grid;
-            grid-template-columns: 1fr 300px; /* Espacio para QR más grande */
-            gap: 40px;
-            align-items: flex-start;
-        }
+        .detalle-grid { display: grid; grid-template-columns: 1fr 300px; gap: 40px; align-items: flex-start; }
         .qr-y-botones { text-align: center; }
         .qr-y-botones h3 { margin-top: 0; }
-        .qr-y-botones img {
-            width: 100%;
-            max-width: 300px; /* QR más grande */
-            border: 5px solid var(--blanco);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            margin-bottom: 25px; /* Espacio entre QR y botones */
-        }
+        .qr-y-botones img { width: 100%; max-width: 300px; border: 5px solid var(--blanco); box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 25px; }
         .botones-qr { display: flex; flex-direction: column; gap: 15px; }
     </style>
 </head>
 <body>
 
-    <!-- El HTML del Login y la estructura del Portal no cambian -->
     <div id="login-container">
-        <!-- ... sin cambios ... -->
+        <div class="login-box">
+            <img src="https://www.hospitalcayetano.gob.pe/PortalWeb/assets/icon/logo-final.png" alt="Logo VeriDoc-Med" class="logo">
+            <h1>Portal del Doctor</h1>
+            <form id="login-form"><input type="email" id="login-email" placeholder="Email" required><input type="password" id="login-clave" placeholder="Contraseña" required><button type="submit" class="btn-primario">Ingresar</button></form>
+        </div>
     </div>
 
     <div id="portal-container" class="hidden">
         <aside id="panel-izquierdo">
-            <!-- ... sin cambios ... -->
+            <h2>Mis Registros</h2>
+            <div id="lista-registros"><p style="color: #777;">No hay registros todavía.</p></div>
         </aside>
 
         <main id="panel-derecho">
+            <!-- 1. CORRECCIÓN: HTML de bienvenida restaurado -->
             <div id="vista-bienvenida">
-                <!-- ... sin cambios ... -->
+                <div class="placeholder-derecho" style="text-align:center;"><img src="" alt="Img Nuevo Registro" style="height:150px; background:#eee; border-radius:10px; margin-bottom:20px;"><button class="btn-accion" onclick="mostrarVista('vista-formulario' )">Nuevo Registro</button></div>
+                <div class="placeholder-derecho" style="text-align:center;"><img src="" alt="Img Compartido" style="height:150px; background:#eee; border-radius:10px; margin-bottom:20px;"><button class="btn-accion">Registro Compartido</button></div>
             </div>
 
+            <!-- 2. CORRECCIÓN: HTML de formulario restaurado -->
             <div id="vista-formulario" class="hidden">
-                <!-- ... sin cambios ... -->
+                <div class="form-wrapper">
+                    <h2>Nuevo Registro de Documento</h2>
+                    <select id="tipo-documento-select">
+                        <option value="">-- Seleccione tipo de documento --</option>
+                        <option value="FUA Médica">FUA Médica</option>
+                        <option value="Documentos">Documentos</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                    <div id="formulario-dinamico"></div>
+                    <div id="firma-container" class="hidden" style="margin-top: 20px;">
+                        <h3>Firme para Validar</h3>
+                        <div class="canvas-container">
+                            <canvas id="canvas-firma"></canvas>
+                            <div id="mensaje-firma" class="mensaje-canvas hidden">Firma Coincide</div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-top:15px;">
+                            <button class="btn-secundario" onclick="limpiarCanvasFirma()">Limpiar</button>
+                            <button id="btn-validar-firma" class="btn-accion">Validar y Generar</button>
+                        </div>
+                    </div>
+                    <button class="btn-secundario" style="width:100%; margin-top:20px;" onclick="mostrarVista('vista-bienvenida')">Volver al Menú Principal</button>
+                </div>
             </div>
 
-            <!-- 2. CAMBIO: HTML de la Vista de Detalle Reestructurada -->
+            <!-- 3. CORRECCIÓN: HTML de detalles con el diseño correcto -->
             <div id="vista-detalle-registro" class="hidden">
                 <div class="detalle-wrapper">
                     <div class="detalle-grid">
